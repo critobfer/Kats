@@ -647,7 +647,77 @@ def symmetric_mean_absolute_percentage_error(
     """
     return 2.0 * scaled_symmetric_mean_absolute_percentage_error(y_true, y_pred)
 
+################################################################################################################################################
+########### METRICS NECESARIES TO DO BATES_GRANGER:
 
+def variace_error(y_true: ArrayLike, y_pred: ArrayLike) -> float:
+    """Compute the variance of error.
+
+    Args:
+        y_true: the actual values.
+        y_pred: the predicted values.
+
+    Returns:
+        The variance of the error.
+    """
+    return np.var(y_true-y_pred)
+
+def covariance_error(y_true: ArrayLike, y1_pred: ArrayLike, y2_pred: ArrayLike) -> float:
+    """Compute the covariance of two errors.
+
+    Args:
+        y_true: the actual values.
+        y1_pred: the first predicted values.
+        y2_pred: the second predicted values.
+
+    Returns:
+        The covariance of the two error.
+    """
+    e1 = y_true-y1_pred
+    e2 = y_true-y2_pred
+    cov = np.cov(e1, e2)[0,1] #we takes a non-diagonal element of the correlation-matrix
+    return cov
+
+
+def correlation_coefficient(y_true: ArrayLike, y1_pred: ArrayLike, y2_pred: ArrayLike) -> float:
+    """Compute the correlation coefficient of two errors.
+
+    Args:
+        y_true: the actual values.
+        y1_pred: the first predicted values.
+        y2_pred: the second predicted values.
+
+    Returns:
+        The correlation coefficient of two errors.
+    """
+    return covariance_error(y_true,y1_pred,y2_pred)/(variace_error(y_true,y1_pred)*variace_error(y_true,y2_pred))
+
+def E_expression(y_true: ArrayLike, y_pred: ArrayLike, v: int) -> float:
+    """Compute the Ei expression of two errors.
+
+    Args:
+        y_true: the actual values.
+        y_pred: the predicted values.
+
+    Returns:
+        The Ei expression of error.
+    """
+    return None
+
+def S2_expression(y_true: ArrayLike, y_pred: ArrayLike, w: float(0,1)) -> float:
+    """Compute the S2 expression of two errors.
+
+    Args:
+        y_true: the actual values.
+        y_pred: the predicted values.
+
+    Returns:
+        The S2 expression of error.
+    """
+    return None
+
+
+################################################################################################################################################
 def tracking_signal(y_true: ArrayLike, y_pred: ArrayLike) -> float:
     """Compute the tracking signal.
 

@@ -71,7 +71,7 @@ class MedianEnsembleModel(ensemble.BaseEnsemble):
             copy=False,
         )
         fcst_all.columns = cast(List[str], pred_dict.keys())
-        self.fcst = fcst_all.median(axis=1)
+        self.fcst = fcst_all.median(axis=1) #TODO median python
 
         # create future dates
         last_date = self.data.time.max()
