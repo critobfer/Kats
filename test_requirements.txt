@@ -1,7 +1,7 @@
 LunarCalendar>=0.0.9
 ax-platform==0.2.9
 fbprophet==0.7.1
-gpytorch<1.9.0
+gpytorch==1.9.0
 holidays>=0.10.2
 neuralprophet==0.3.2
 numba>=0.52.0
