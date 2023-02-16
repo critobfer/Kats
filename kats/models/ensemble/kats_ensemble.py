@@ -104,7 +104,7 @@ class KatsEnsemble(Model):
 
     def validate_params(self) -> None:
         # validate aggregation method
-        if self.params["aggregation"] not in ("median", "weightedavg"):
+        if self.params["aggregation"] not in ("median", "weightedavg","bates&gates"): # Añadimos la opción
             method = self.params["aggregation"]
             msg = f"Only support `median` or `weightedavg` ensemble, but got {method}."
             raise _logged_error(msg)
@@ -526,7 +526,7 @@ class KatsEnsemble(Model):
             predicted.update(extra_predict)
             self.predicted = predicted
 
-            if self.params["aggregation"] == "weightedavg":
+            if self.params["aggregation"] == "weightedavg" or self.params["aggregation"] == "bates&gates":
                 if desea_err is None:
                     desea_err = extra_error
                 elif extra_error is not None:
@@ -572,6 +572,20 @@ class KatsEnsemble(Model):
             }
         else:
             self.weights = None
+
+        if self.params["aggregation"] == "bates&gates":
+            assert forecast_error is not None
+            original_weights = {
+                model: err
+                for model, err in forecast_error.items()
+            }
+            self.weights = {
+                model: err / sum(original_weights.values())
+                for model, err in original_weights.items()
+            }
+        else:
+            self.weights = None
+
         return predicted, self.weights
 
     def forecastExecutor(
@@ -689,7 +703,7 @@ class KatsEnsemble(Model):
                 {
                     "time": dates,
                     "fcst": fcsts["fcst"].dot(weights),
-                    "fcst_lower": fcsts["fcst_lower"].dot(weights),
+                    "fcst_lower": fcsts["fcst_lower"].dot(weights), #Los IC son los propios de la pred individual ponderado
                     "fcst_upper": fcsts["fcst_upper"].dot(weights),
                 },
                 copy=False,
@@ -783,6 +797,9 @@ class KatsEnsemble(Model):
             float, the backtesting error
         """
 
+        if self.params["aggregation"] == "bates&gates": # Añadimos la opción
+            err_method = "mse" # En caso de estar realizando bates&gates
+
         bt = BackTesterSimple(
             [err_method],
             self.data,
@@ -807,9 +824,13 @@ class KatsEnsemble(Model):
         Returns:
             Dict of errors from each model
         """
+
+        if self.params["aggregation"] == "bates&gates": # Añadimos la opción
+            err_method = "mse" # En caso de estar realizando bates&gates
+
         model_params = self.model_params
         if model_params is None:
-            raise _logged_error("fit must be called before backtesting.")
+            raise _logged_error("fit must be called before backtesting.") #Backster debe verse despues de ajustar
 
         num_process = min(len(MODELS.keys()), (cpu_count() - 1) // 2)
         if num_process < 1:
@@ -828,8 +849,10 @@ class KatsEnsemble(Model):
                 kwds={"err_method": err_method},
             )
         pool.close()
-        pool.join()
+        pool.join() # TODO: Cmbiar en funcioni de las cosas 
         self.errors = errors = {model: res.get() for model, res in backtesters.items()}
+
+
         original_weights = {
             model: 1 / (err + sys.float_info.epsilon) for model, err in errors.items()
         }
@@ -837,4 +860,15 @@ class KatsEnsemble(Model):
             model: err / sum(original_weights.values())
             for model, err in original_weights.items()
         }
+
+        if self.params["aggregation"] == "bates&gates": # Añadimos la opción
+            original_weights = {
+                model: err
+                for model, err in errors.items()
+            }
+            weights = {
+                model: err / sum(original_weights.values())
+                for model, err in original_weights.items()
+            }
+
         return weights, errors

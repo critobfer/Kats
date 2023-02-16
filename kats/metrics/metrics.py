@@ -675,7 +675,7 @@ def covariance_error(y_true: ArrayLike, y1_pred: ArrayLike, y2_pred: ArrayLike) 
     """
     e1 = y_true-y1_pred
     e2 = y_true-y2_pred
-    cov = np.cov(e1, e2)[0,1] #we takes a non-diagonal element of the correlation-matrix
+    cov = np.cov(e1, e2)[0,1] #we takes a non-diagonal element of the correlation-matrixmedian
     return cov
 
 
@@ -702,9 +702,9 @@ def E_expression(y_true: ArrayLike, y_pred: ArrayLike, v: int) -> float:
     Returns:
         The Ei expression of error.
     """
-    return None
+    return 0.1
 
-def S2_expression(y_true: ArrayLike, y_pred: ArrayLike, w: float(0,1)) -> float:
+def S2_expression(y_true: ArrayLike, y_pred: ArrayLike, w: float) -> float:
     """Compute the S2 expression of two errors.
 
     Args:
@@ -714,7 +714,7 @@ def S2_expression(y_true: ArrayLike, y_pred: ArrayLike, w: float(0,1)) -> float:
     Returns:
         The S2 expression of error.
     """
-    return None
+    return 0.1
 
 
 ################################################################################################################################################
