@@ -3,12 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Ensemble models with weighted average individual models
+"""Ensemble models Bates & Granger individual models
 
 Assume we have k base models, after we make forecasts with each individual
-model, we learn the weights for each individual model based on corresponding
-back testing results, i.e., model with better performance should have higher
-weight.
+model, Computes forecast combination weights according to the approach by 
+Bates and Granger (1969) and produces a forecast.
 """
 import logging
 import sys
@@ -24,8 +23,8 @@ from kats.models.model import Model
 from kats.utils.backtesters import BackTesterSimple
 
 
-class WeightedAvgEnsemble(ensemble.BaseEnsemble):
-    """Weighted average ensemble model class
+class BatesGranderEnsemble(ensemble.BaseEnsemble):
+    """Bates & Granger ensemble model class
 
     Attributes:
         data: the input time series data as in :class:`kats.consts.TimeSeriesData`
@@ -57,7 +56,7 @@ class WeightedAvgEnsemble(ensemble.BaseEnsemble):
         model_class: Type[Model],
         train_percentage: int = 80,
         test_percentage: int = 20,
-        err_method: str = "mape",
+        err_method: str = "mse",
     ) -> float:
         """Private method to run all backtesting process
 
@@ -84,7 +83,7 @@ class WeightedAvgEnsemble(ensemble.BaseEnsemble):
         bt.run_backtest()
         return bt.get_error_value(err_method)
 
-    def _backtester_all(self, err_method: str = "mape") -> Dict[str, Any]:
+    def _backtester_all(self, err_method: str = "mse") -> Dict[str, Any]:
         """Private method to run all backtesting process
 
         Args:
@@ -110,11 +109,12 @@ class WeightedAvgEnsemble(ensemble.BaseEnsemble):
         pool.join()
         self.errors = {model: res.get() for model, res in backtesters.items()}
         original_weights = {
-            model: 1 / (err + sys.float_info.epsilon)
+            model: err # El mse
             for model, err in self.errors.items()
         }
         self.weights = {
-            model: err / sum(original_weights.values())
+            model: err / sum(original_weights.values()) 
+            # El peso original es el mse, si lo dividimos por la suma de los pesos tenemos el valor final
             for model, err in original_weights.items()
         }
         return self.weights
@@ -133,7 +133,7 @@ class WeightedAvgEnsemble(ensemble.BaseEnsemble):
         """
         # keep these in kwargs to pass to _predict_all.
         self.freq = freq = kwargs.get("freq", "D")
-        err_method = kwargs.get("err_method", "mape")
+        err_method = kwargs.get("err_method", "mse")
         # calculate the weights
         self._backtester_all(err_method=err_method)
 
@@ -146,10 +146,12 @@ class WeightedAvgEnsemble(ensemble.BaseEnsemble):
             axis=1,
             copy=False,
         )
-        fcst_all.columns = cast(List[str], pred_dict.keys())
-        weights = self.weights
-        assert weights is not None
-        self.fcst_weighted = fcst_all.dot(np.array(list(weights.values())))
+        fcst_all.columns = cast(List[str], pred_dict.keys()) 
+        # Lista de string y los modelos(elemento),lo convierte en este formato
+        weights = self.weights #TODO:Cambiar los pesos
+        assert weights is not None #Si es None ==> AssertionError
+        # PREDICCIÓN FINAL:
+        self.fcst_weighted = fcst_all.dot(np.array(list(weights.values()))) # Producto matricial
 
         # create future dates
         last_date = self.data.time.max()
@@ -165,7 +167,7 @@ class WeightedAvgEnsemble(ensemble.BaseEnsemble):
         return fcst_df
 
     def __str__(self) -> str:
-        """Get default parameter search space for the weighted average ensemble model
+        """Get default parameter search space for the Bates & Gates ensemble model
 
         Args:
             None
@@ -173,4 +175,4 @@ class WeightedAvgEnsemble(ensemble.BaseEnsemble):
         Returns:
             Model name as a string
         """
-        return "Weighted Average Ensemble"
+        return "Bates & Granger Ensemble"
