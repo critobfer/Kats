@@ -23,7 +23,7 @@ from kats.models.model import Model
 from kats.utils.backtesters import BackTesterSimple
 
 
-class BatesGranderEnsemble(ensemble.BaseEnsemble):
+class BatesGrangerEnsemble(ensemble.BaseEnsemble):
     """Bates & Granger ensemble model class
 
     Attributes:
