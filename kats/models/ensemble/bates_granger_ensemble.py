@@ -109,7 +109,7 @@ class BatesGranderEnsemble(ensemble.BaseEnsemble):
         pool.join()
         self.errors = {model: res.get() for model, res in backtesters.items()}
         original_weights = {
-            model: err # El mse
+            model: 1/(err**2 + sys.float_info.epsilon) # El mse
             for model, err in self.errors.items()
         }
         self.weights = {
@@ -148,7 +148,7 @@ class BatesGranderEnsemble(ensemble.BaseEnsemble):
         )
         fcst_all.columns = cast(List[str], pred_dict.keys()) 
         # Lista de string y los modelos(elemento),lo convierte en este formato
-        weights = self.weights #TODO:Cambiar los pesos
+        weights = self.weights 
         assert weights is not None #Si es None ==> AssertionError
         # PREDICCIÓN FINAL:
         self.fcst_weighted = fcst_all.dot(np.array(list(weights.values()))) # Producto matricial

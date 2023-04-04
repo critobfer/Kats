@@ -104,9 +104,9 @@ class KatsEnsemble(Model):
 
     def validate_params(self) -> None:
         # validate aggregation method
-        if self.params["aggregation"] not in ("median", "weightedavg","bates&gates"): # Añadimos la opción
+        if self.params["aggregation"] not in ("median", "weightedavg", "bates&gates"): # Añadimos la opción
             method = self.params["aggregation"]
-            msg = f"Only support `median` or `weightedavg` ensemble, but got {method}."
+            msg = f"Only support `median` , `weightedavg` or `bates&gates` ensemble, but got {method}."
             raise _logged_error(msg)
 
         # validate decomposition method

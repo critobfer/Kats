@@ -22,6 +22,7 @@ from kats.models import (
     prophet,
     quadratic_model,
     sarima,
+    theta
 )
 from kats.models.model import Model
 
@@ -33,6 +34,7 @@ BASE_MODELS = {
     "prophet": prophet.ProphetModel,
     "linear": linear_model.LinearModel,
     "quadratic": quadratic_model.QuadraticModel,
+    "theta": theta.ThetaModel,
 }
 
 

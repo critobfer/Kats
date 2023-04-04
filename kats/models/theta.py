@@ -35,7 +35,8 @@ class ThetaParams(Params):
 
     Attributes:
         m: Number of observations before the seasonal pattern repeats
-           For ex, m=12 for montly data with yearly seasonality
+        For ex, m=12 for montly data with yearly seasonality
+        
     """
 
     def __init__(self, m: int = 1) -> None:
