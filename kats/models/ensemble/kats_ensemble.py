@@ -303,6 +303,8 @@ class KatsEnsemble(Model):
         Returns:
             Tuple of fitted individual model and weights
         """
+        if self.params["aggregation"] == "bates&gates": # Añadimos la opción
+            err_method = "mse" # En caso de estar realizando bates&gates
 
         # Fit individual model with given data
         num_process = min(len(MODELS), (cpu_count() - 1) // 2)
@@ -336,7 +338,9 @@ class KatsEnsemble(Model):
 
         This is the fit methdo to fit individual forecasting model
         """
-
+        if self.params["aggregation"] == "bates&gates": # Añadimos la opción
+            err_method = "mse" # En caso de estar realizando bates&gates
+            
         self.seasonality = KatsEnsemble.seasonality_detector(self.data)
 
         # check if self.params["seasonality_length"] is given
