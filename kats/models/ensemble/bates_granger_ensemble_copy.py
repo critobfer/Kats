@@ -29,7 +29,7 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
         data: the input time series data as in :class:`kats.consts.TimeSeriesData`
         params: the model parameter class in Kats
     """
-
+    back_method: Optional[str] = "simple"
     freq: Optional[str] = None
     errors: Optional[Dict[str, Any]] = None
     weights: Optional[Dict[str, Any]] = None
@@ -38,10 +38,10 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
     dates: Optional[pd.DatetimeIndex] = None
     fcst_df: Optional[pd.DataFrame] = None
 
-    def __init__(self, data: TimeSeriesData, params: EnsembleParams, back_method: str) -> None:
+    def __init__(self, data: TimeSeriesData, params: EnsembleParams) -> None:
         self.data = data
         self.params = params
-        self.back_method = back_method
+        # self.back_method = back_method
         if not isinstance(self.data.value, pd.Series):
             msg = "Only support univariate time series, but get {type}.".format(
                 type=type(self.data.value)
@@ -58,11 +58,10 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
         end_train_percentage: int = 80,
         expanding_steps: int = 2,
         sliding_steps: int = 2,
-        train_percentage: int = 80,
-        test_percentage: int = 20,
+        train_percentage: int = 70,
+        test_percentage: int = 10,
         window_percentage: int = 20,
         err_method: str = "mse"
-        # back_method: str = self.back_method
     ) -> float:
         """Private method to run all backtesting process
 
@@ -77,9 +76,10 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
         Returns:
             float, the backtesting error
         """
-        if self.back_method not in ["simple","expanding","rolling","fixed"]:
+        back_method = self.back_method
+        if back_method not in ["simple","expanding","rolling","fixed"]:
             return print("This method are not available, chooose  simple, expanding, rolling or fixed")
-        if self.back_method == "simple":
+        if back_method == "simple":
             bt = BackTesterSimple(
                 [err_method],
                 self.data,
@@ -88,19 +88,18 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
                 test_percentage,
                 model_class,
             )
-        if self.back_method == "expanding":
+        if back_method == "expanding":
             bt = BackTesterExpandingWindow(
                 [err_method],
                 self.data,
                 params,
-                start_train_percentage,
-                end_train_percentage,
-                train_percentage,
-                expanding_steps,
-                test_percentage,
-                model_class,
+                start_train_percentage = 80,
+                end_train_percentage = 80,
+                expanding_steps = 1,
+                test_percentage = 20,
+                model_class = model_class,
             )
-        if self.back_method == "rolling":
+        if back_method == "rolling":
             bt = BackTesterRollingWindow(
                 [err_method],
                 self.data,
@@ -111,15 +110,15 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
                 model_class,
             )
             
-        if self.back_method == "fixed":
+        if back_method == "fixed":
             bt = BackTesterFixedWindow(
                 [err_method],
                 self.data,
                 params,
-                train_percentage,
-                test_percentage,
-                window_percentage,
-                model_class,
+                train_percentage = 70,
+                test_percentage = 10,
+                window_percentage = 20,
+                model_class = model_class,
             )
         bt.run_backtest()
         return bt.get_error_value(err_method)
