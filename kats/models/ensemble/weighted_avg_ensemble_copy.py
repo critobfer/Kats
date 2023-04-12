@@ -3,11 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Ensemble models Bates & Granger individual models
+"""Ensemble models with weighted average individual models
 
 Assume we have k base models, after we make forecasts with each individual
-model, Computes forecast combination weights according to the approach by 
-Bates and Granger (1969) and produces a forecast.
+model, we learn the weights for each individual model based on corresponding
+back testing results, i.e., model with better performance should have higher
+weight.
 """
 import logging
 import sys
@@ -22,13 +23,15 @@ from kats.models.ensemble.ensemble import BASE_MODELS, EnsembleParams
 from kats.models.model import Model
 from kats.utils.backtesters import BackTesterSimple, BackTesterExpandingWindow, BackTesterRollingWindow, BackTesterFixedWindow
 
-class BatesGrangerEnsemble(ensemble.BaseEnsemble):
-    """Bates & Granger ensemble model class
+
+class WeightedAvgEnsemble(ensemble.BaseEnsemble):
+    """Weighted average ensemble model class
 
     Attributes:
         data: the input time series data as in :class:`kats.consts.TimeSeriesData`
         params: the model parameter class in Kats
     """
+
     back_method: Optional[str] = "simple"
     freq: Optional[str] = None
     errors: Optional[Dict[str, Any]] = None
@@ -41,7 +44,6 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
     def __init__(self, data: TimeSeriesData, params: EnsembleParams) -> None:
         self.data = data
         self.params = params
-        # self.back_method = back_method
         if not isinstance(self.data.value, pd.Series):
             msg = "Only support univariate time series, but get {type}.".format(
                 type=type(self.data.value)
@@ -54,7 +56,7 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
         params: Params,
         # pyre-fixme[24]: Generic type `Model` expects 1 type parameter.
         model_class: Type[Model],
-        err_method: str = "mse"
+        err_method: str = "mape",
     ) -> float:
         """Private method to run all backtesting process
 
@@ -114,11 +116,10 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
                 window_percentage = 10,
                 model_class = model_class,
             )
-            
         bt.run_backtest()
         return bt.get_error_value(err_method)
 
-    def _backtester_all(self, err_method: str = "mse") -> Dict[str, Any]:
+    def _backtester_all(self, err_method: str = "mape") -> Dict[str, Any]:
         """Private method to run all backtesting process
 
         Args:
@@ -144,12 +145,11 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
         pool.join()
         self.errors = {model: res.get() for model, res in backtesters.items()}
         original_weights = {
-            model: 1/(err**2 + sys.float_info.epsilon) # El mse
+            model: 1 / (err + sys.float_info.epsilon)
             for model, err in self.errors.items()
         }
         self.weights = {
-            model: err / sum(original_weights.values()) 
-            # El peso original es el mse, si lo dividimos por la suma de los pesos tenemos el valor final
+            model: err / sum(original_weights.values())
             for model, err in original_weights.items()
         }
         return self.weights
@@ -168,7 +168,7 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
         """
         # keep these in kwargs to pass to _predict_all.
         self.freq = freq = kwargs.get("freq", "D")
-        err_method = kwargs.get("err_method", "mse")
+        err_method = kwargs.get("err_method", "mape")
         # calculate the weights
         self._backtester_all(err_method=err_method)
 
@@ -181,12 +181,10 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
             axis=1,
             copy=False,
         )
-        fcst_all.columns = cast(List[str], pred_dict.keys()) 
-        # Lista de string y los modelos(elemento),lo convierte en este formato
-        weights = self.weights 
-        assert weights is not None #Si es None ==> AssertionError
-        # PREDICCIÓN FINAL:
-        self.fcst_weighted = fcst_all.dot(np.array(list(weights.values()))) # Producto matricial
+        fcst_all.columns = cast(List[str], pred_dict.keys())
+        weights = self.weights
+        assert weights is not None
+        self.fcst_weighted = fcst_all.dot(np.array(list(weights.values())))
 
         # create future dates
         last_date = self.data.time.max()
@@ -202,7 +200,7 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
         return fcst_df
 
     def __str__(self) -> str:
-        """Get default parameter search space for the Bates & Gates ensemble model
+        """Get default parameter search space for the weighted average ensemble model
 
         Args:
             None
@@ -210,4 +208,4 @@ class BatesGrangerEnsemble(ensemble.BaseEnsemble):
         Returns:
             Model name as a string
         """
-        return "Bates & Granger Ensemble"
+        return "Weighted Average Ensemble"
