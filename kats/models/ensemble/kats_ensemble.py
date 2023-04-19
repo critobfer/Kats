@@ -104,9 +104,9 @@ class KatsEnsemble(Model):
 
     def validate_params(self) -> None:
         # validate aggregation method
-        if self.params["aggregation"] not in ("median", "weightedavg", "bates&gates"): # Añadimos la opción
+        if self.params["aggregation"] not in ("median", "weightedavg", "bates&granger"): # Añadimos la opción
             method = self.params["aggregation"]
-            msg = f"Only support `median` , `weightedavg` or `bates&gates` ensemble, but got {method}."
+            msg = f"Only support `median` , `weightedavg` or `bates&granger` ensemble, but got {method}."
             raise _logged_error(msg)
 
         # validate decomposition method
@@ -303,7 +303,7 @@ class KatsEnsemble(Model):
         Returns:
             Tuple of fitted individual model and weights
         """
-        if self.params["aggregation"] == "bates&gates": # Añadimos la opción
+        if self.params["aggregation"] == "bates&granger": # Añadimos la opción
             err_method = "mse" # En caso de estar realizando bates&gates
 
         # Fit individual model with given data
@@ -338,7 +338,7 @@ class KatsEnsemble(Model):
 
         This is the fit methdo to fit individual forecasting model
         """
-        if self.params["aggregation"] == "bates&gates": # Añadimos la opción
+        if self.params["aggregation"] == "bates&granger": # Añadimos la opción
             err_method = "mse" # En caso de estar realizando bates&gates
             
         self.seasonality = KatsEnsemble.seasonality_detector(self.data)
@@ -530,7 +530,7 @@ class KatsEnsemble(Model):
             predicted.update(extra_predict)
             self.predicted = predicted
 
-            if self.params["aggregation"] == "weightedavg" or self.params["aggregation"] == "bates&gates":
+            if self.params["aggregation"] == "weightedavg" or self.params["aggregation"] == "bates&granger":
                 if desea_err is None:
                     desea_err = extra_error
                 elif extra_error is not None:
@@ -577,7 +577,7 @@ class KatsEnsemble(Model):
         else:
             self.weights = None
 
-        if self.params["aggregation"] == "bates&gates":
+        if self.params["aggregation"] == "bates&granger":
             assert forecast_error is not None
             original_weights = {
                 model: err
@@ -801,7 +801,7 @@ class KatsEnsemble(Model):
             float, the backtesting error
         """
 
-        if self.params["aggregation"] == "bates&gates": # Añadimos la opción
+        if self.params["aggregation"] == "bates&granger": # Añadimos la opción
             err_method = "mse" # En caso de estar realizando bates&gates
 
         bt = BackTesterSimple(
@@ -829,7 +829,7 @@ class KatsEnsemble(Model):
             Dict of errors from each model
         """
 
-        if self.params["aggregation"] == "bates&gates": # Añadimos la opción
+        if self.params["aggregation"] == "bates&granger": # Añadimos la opción
             err_method = "mse" # En caso de estar realizando bates&gates
 
         model_params = self.model_params
@@ -865,7 +865,7 @@ class KatsEnsemble(Model):
             for model, err in original_weights.items()
         }
 
-        if self.params["aggregation"] == "bates&gates": # Añadimos la opción
+        if self.params["aggregation"] == "bates&granger": # Añadimos la opción
             original_weights = {
                 model: err
                 for model, err in errors.items()
