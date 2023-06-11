@@ -104,9 +104,9 @@ class KatsEnsemble(Model):
 
     def validate_params(self) -> None:
         # validate aggregation method
-        if self.params["aggregation"] not in ("median", "weightedavg", "bates&granger"): # Añadimos la opción
+        if self.params["aggregation"] not in ("median", "weightedavg", "bates&granger", "mean"): # Añadimos la opción
             method = self.params["aggregation"]
-            msg = f"Only support `median` , `weightedavg` or `bates&granger` ensemble, but got {method}."
+            msg = f"Only support `median` , `weightedavg`, `mean` or `bates&granger` ensemble, but got {method}."
             raise _logged_error(msg)
 
         # validate decomposition method
@@ -350,7 +350,7 @@ class KatsEnsemble(Model):
             raise _logged_error(msg)
 
         # set up auto backtesting flag
-        auto_backtesting = False if self.params["aggregation"] == "median" else True
+        auto_backtesting = False if (self.params["aggregation"] == "median") or (self.params["aggregation"] == "mean") else True
 
         # check fitExecutor
         fitExecutor = self.params.get("fitExecutor")
@@ -481,7 +481,7 @@ class KatsEnsemble(Model):
             raise _logged_error(msg)
 
         # set up auto backtesting flag
-        auto_backtesting = False if self.params["aggregation"] == "median" else True
+        auto_backtesting = False if (self.params["aggregation"] == "median") or (self.params["aggregation"] == "mean") else True
 
         if self.seasonality:
             # call forecastExecutor and move to next steps
@@ -690,6 +690,18 @@ class KatsEnsemble(Model):
                     "fcst": fcsts["fcst"].median(axis=1),
                     "fcst_lower": fcsts["fcst_lower"].median(axis=1),
                     "fcst_upper": fcsts["fcst_upper"].median(axis=1),
+                },
+                copy=False,
+            )
+        elif self.params["aggregation"].lower() == "mean":
+            # clean up dataframes with C.I as np.nan or zero
+            fcsts = self.clean_dummy_CI(fcsts, use_zero=False)
+            self.fcst_df = fcst_df = pd.DataFrame(
+                {
+                    "time": dates,
+                    "fcst": fcsts["fcst"].mean(axis=1),
+                    "fcst_lower": fcsts["fcst_lower"].mean(axis=1),
+                    "fcst_upper": fcsts["fcst_upper"].mean(axis=1),
                 },
                 copy=False,
             )
